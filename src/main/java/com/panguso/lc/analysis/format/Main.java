@@ -18,5 +18,6 @@ public class Main {
 		logger.info(prop.toString());
 		// int res = ToolRunner.run(new Configuration(), new Logcenter(), args);
 		// System.exit(res);
+		
 	}
 }
