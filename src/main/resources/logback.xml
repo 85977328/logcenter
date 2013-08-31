@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+	<!-- appender -->
+	<appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}[%p]: %m%n</pattern>
+		</layout>
+	</appender>
+	<!-- 主日志 -->
+	<appender name="main" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<File>/data0/search/lc-analysis-format/logs/main.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<FileNamePattern>/data0/search/lc-analysis-format/logs/main%i.log
+			</FileNamePattern>
+			<MinIndex>1</MinIndex>
+			<MaxIndex>50</MaxIndex>
+		</rollingPolicy>
+		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<MaxFileSize>100MB</MaxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<Pattern>[%d{yyyyMMdd HH:mm:ss.SSS}] [%-5level] [%-30logger{0}][%-3L] [SeqId:%X{SeqId}] - %msg%n</Pattern>
+		</encoder>
+	</appender>
+	<!-- root 默认日志配置 -->
+	<root level="info">
+		<appender-ref ref="main" />
+		<appender-ref ref="stdout" />
+	</root>
+</configuration>

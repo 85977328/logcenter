@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context" xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context-3.2.xsd 
+http://www.springframework.org/schema/tx 
+http://www.springframework.org/schema/tx/spring-tx-3.2.xsd 
+http://www.springframework.org/schema/aop  
+http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+http://www.springframework.org/schema/util 
+http://www.springframework.org/schema/util/spring-util-3.2.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<!-- bean annotation driven 
+	<context:annotation-config />
+	<context:component-scan base-package="com.panguso.lc.analysis.format" />
+	-->
+	<!-- configuration 
+	@Value("#{configProperties['hadoop.crawler.dir']}")
+	-->
+	<bean id="path" class="java.lang.String">
+		<constructor-arg value="classpath:application.properties" />
+	</bean>
+	<bean id="configProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="locations">
+			<list>
+				<ref bean="path" />
+			</list>
+		</property>
+	</bean>
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">
+		<property name="properties" ref="configProperties" />
+	</bean>
+	
+	<!-- memcached初始化 
+	 MemcachedClientBuilder builder = new XMemcachedClientBuilder(AddrUtil.getAddresses(addr));
+	 MemcachedClient memcachedClient = builder.build();
+	-->
+	<bean id="builder" class="net.rubyeye.xmemcached.XMemcachedClientBuilder">
+		<constructor-arg>
+			<bean class="net.rubyeye.xmemcached.utils.AddrUtil" factory-method="getAddresses">
+				<constructor-arg value="${memcached.host}" />
+			</bean>
+		</constructor-arg>
+	</bean>
+	<bean id="memcachedClient" class="net.rubyeye.xmemcached.MemcachedClient" factory-bean="builder" factory-method="build" destroy-method="shutdown" />
+
+	<!-- Data Source -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" scope="singleton">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="initialSize" value="3" />
+		<property name="minIdle" value="1" />
+		<property name="maxActive" value="5" />
+		<property name="maxIdle" value="5" />
+		<property name="validationQuery" value="select 1" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testOnReturn" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="minEvictableIdleTimeMillis" value="60000" />
+		<property name="timeBetweenEvictionRunsMillis" value="30000" />
+	</bean>
+	<!-- This will ensure that Hibernate or JPA exceptions are automatically translated into Spring's generic DataAccessException hierarchy for those classes annotated with Repository. For example, see ***DAOImpl. -->
+	<bean class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" />
+	<!-- JPA Entity Manager Factory -->
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="packagesToScan" value="com.panguso.lc.analysis.format.entity" />
+		<property name="dataSource" ref="dataSource" />
+		<property name="jpaVendorAdapter" ref="hibernateVendor" />
+		<property name="jpaPropertyMap" ref="jpaPropertyMap" />
+	</bean>
+	<util:map id="jpaPropertyMap">
+		<entry key="hibernate.hbm2ddl.auto" value="update" />
+		<entry key="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
+		<entry key="hibernate.connection.autocommit" value="true" />
+		<!-- To enable Hibernate's second level cache and query cache settings -->
+		<entry key="hibernate.max_fetch_depth" value="4" />
+		<entry key="hibernate.cache.use_second_level_cache" value="true" />
+		<entry key="hibernate.cache.use_query_cache" value="true" />
+		<entry key="hibernate.cache.region.factory_class" value="org.hibernate.cache.ehcache.EhCacheRegionFactory" />
+	</util:map>
+	<bean id="hibernateVendor" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+		<property name="database" value="MYSQL" />
+		<property name="showSql" value="true" />
+		<property name="generateDdl" value="true" />
+		<property name="databasePlatform" value="org.hibernate.dialect.MySQLDialect" />
+	</bean>
+	<!-- Transaction Config -->
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+		<property name="jpaDialect">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaDialect" />
+		</property>
+	</bean>
+	 <!-- User declarative transaction management -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+</beans>
